@@ -10,6 +10,7 @@ Description: Implementation of k-nearest neighbor classification.
 import numpy as np
 import scipy.io as sio
 import matplotlib.pyplot as plt
+from collections import Counter
 
 
 def sqeuclidean(x,y):
@@ -64,24 +65,43 @@ def classify_knn(test, data, labels, k, dist, plot=False):
     # get test vectors
     for itvec, tvec in enumerate(test):
         if dist == 'sqeuclidean':
-            cidx = np.argmin([ sqeuclidean(tvec, t) for t in data ])
+            if k == 1:
+                classes[itvec] = labels[np.argmin([ sqeuclidean(tvec, t) for t in data ])]
+            else:
+                # get the top @k label indices
+                candsidx = np.argsort([ sqeuclidean(tvec, t) for t in data ])[0:k]
+                # this gives us the actual labels
+                klabels = list(labels[candsidx])
+                # unique labels to count for
+                possibles = list(set(klabels))
+                # get max count label
+                classes[itvec] = possibles[np.argmax([ klabels.count(c) 
+                                                       for c in possibles ])]
         elif dist == 'mahalanobis':
-            cidx = np.argmin([ mahalanobis(tvec, t, covmat) for t in data ])
+            if k == 1:
+                classes[itvec] = labels[np.argmin([ mahalanobis(tvec, t, covmat) for t in data ])]
+            else:
+                # get the top @k label indices
+                candsidx = np.argsort([ mahalanobis(tvec, t, covmat) for t in data ])[0:k]
+                # this gives us the actual labels
+                klabels = list(labels[candsidx])
+                # unique labels to count for
+                possibles = list(set(klabels))
+                # get max count label
+                classes[itvec] = possibles[np.argmax([ klabels.count(c) 
+                                                       for c in possibles ])]
         if plot:
-            plt.title("Predicted: "+str(int(cidx>data.shape[0]/2))+
-                      ", Actual: "+str(int(itvec>test.shape[0]/2)))
             plt.imshow(tvec.reshape(28,28))
             plt.gray()
             plt.show()
-        # record predicted classes
-        classes[itvec] = labels[cidx]
     return classes
 
 
 if __name__ == "__main__":
     # set some params
-    ntrain = 50
-    ntest = 10
+    ntrain = 100
+    ntest = 50
+    kneighbors = 10
     # mahal. gets 0.93 success, sqeuc. only 0.33
     digits = ['0','1', '7']
     # but then here mahal. gets 0.66 success, sqeuc. only 0.1
@@ -109,19 +129,30 @@ if __name__ == "__main__":
                [ [int(k)]*ntest for k in digits ] 
         )
     )
-    # try to predict the labels
-    predictions = classify_knn(test=testdata, 
-                               data=traindata, 
-                               labels=trainlabels,
-                               k=1,
-                               dist='sqeuclidean')
-    print("Success rate w/ sq. euclidean distance: ", 
-          np.sum(testlabels == predictions)/float(ntest*len(digits)))
-    # now with mahalanobis
-    predictions = classify_knn(test=testdata, 
-                               data=traindata, 
-                               labels=trainlabels,
-                               k=1,
-                               dist='mahalanobis')
-    print("Success rate w/ mahalanobis distance: ", 
-          np.sum(testlabels == predictions)/float(ntest*len(digits)))
+    
+    # gather some performance data as function of # neighbors
+    sqeu_perf = np.empty(kneighbors)
+    mahal_perf = np.empty(kneighbors)
+    for knbs in xrange(1,kneighbors):
+        # try to predict the labels
+        sqeu_pred = classify_knn(test=testdata, 
+                                 data=traindata, 
+                                 labels=trainlabels,
+                                 k=knbs,
+                                 dist='sqeuclidean')
+        sqeu_perf[knbs] = np.sum(testlabels == sqeu_pred)/float(ntest*len(digits))
+        # now with mahalanobis
+        mahal_pred = classify_knn(test=testdata, 
+                                  data=traindata, 
+                                  labels=trainlabels,
+                                  k=knbs,
+                                  dist='mahalanobis')
+        mahal_perf[knbs] = np.sum(testlabels == mahal_pred)/float(ntest*len(digits))
+    # plot our results
+    plt.plot(range(kneighbors), sqeu_perf, label="sq. euclidean")
+    plt.plot(range(kneighbors), mahal_perf, label="mahalanobis")
+    plt.title("Success Rate vs. K with KNN on some MNIST digits")
+    plt.ylabel("Success Rate")
+    plt.xlabel("Number of Neighbors")
+    plt.legend()
+    plt.show()
