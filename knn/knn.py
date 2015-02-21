@@ -10,7 +10,6 @@ Description: Implementation of k-nearest neighbor classification.
 import numpy as np
 import scipy.io as sio
 import matplotlib.pyplot as plt
-from collections import Counter
 
 
 def sqeuclidean(x,y):
@@ -66,10 +65,12 @@ def classify_knn(test, data, labels, k, dist, plot=False):
     for itvec, tvec in enumerate(test):
         if dist == 'sqeuclidean':
             if k == 1:
-                classes[itvec] = labels[np.argmin([ sqeuclidean(tvec, t) for t in data ])]
+                classes[itvec] = labels[np.argmin([ sqeuclidean(tvec, t) 
+                                                    for t in data ])]
             else:
                 # get the top @k label indices
-                candsidx = np.argsort([ sqeuclidean(tvec, t) for t in data ])[0:k]
+                candsidx = np.argsort([ sqeuclidean(tvec, t) 
+                                        for t in data ])[0:k]
                 # this gives us the actual labels
                 klabels = list(labels[candsidx])
                 # unique labels to count for
@@ -79,10 +80,12 @@ def classify_knn(test, data, labels, k, dist, plot=False):
                                                        for c in possibles ])]
         elif dist == 'mahalanobis':
             if k == 1:
-                classes[itvec] = labels[np.argmin([ mahalanobis(tvec, t, covmat) for t in data ])]
+                classes[itvec] = labels[np.argmin([ mahalanobis(tvec, t, covmat) 
+                                                    for t in data ])]
             else:
                 # get the top @k label indices
-                candsidx = np.argsort([ mahalanobis(tvec, t, covmat) for t in data ])[0:k]
+                candsidx = np.argsort([ mahalanobis(tvec, t, covmat) 
+                                        for t in data ])[0:k]
                 # this gives us the actual labels
                 klabels = list(labels[candsidx])
                 # unique labels to count for
