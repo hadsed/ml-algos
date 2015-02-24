@@ -119,8 +119,7 @@ if __name__ == "__main__":
     # labels
     trainlabels = np.array(
         reduce(lambda x,y: x+y,
-               [ [int(k)]*ntrain for k in digits ] 
-        )
+               [ [int(k)]*ntrain for k in digits ] )
     )
     # some test data
     testdata = np.vstack(
@@ -129,8 +128,7 @@ if __name__ == "__main__":
     # true labels
     testlabels = np.array(
         reduce(lambda x,y: x+y,
-               [ [int(k)]*ntest for k in digits ] 
-        )
+               [ [int(k)]*ntest for k in digits ] )
     )
     
     # gather some performance data as function of # neighbors

@@ -14,7 +14,7 @@ import scipy.io as sio
 import matplotlib.pyplot as plt
 
 
-def pca(data, p):
+def pca(data, p, svd=False):
     """
     Do linear PCA and return a reconstruction using the
     @p principle components of an eigendecomposed @data
@@ -27,13 +27,20 @@ def pca(data, p):
     Returns: matrix of shape @data.shape.
     """
     # sample means
-    means = data.mean(axis=0)/float(ndata)
+    means = data.mean(axis=0)
     meanmat = np.tile(means, 
                       (ndata*len(digits),1))
     # covariance matrix
     cov = np.cov(data.T)
-    # get eigendecomposition
-    evals, evecs = spla.eigh(cov)
+    if svd:
+        # get the SVD
+        evecs, evals, vvecs = spla.svd(cov)
+        # keep only some of them
+        evecs = evecs[:,:p]
+        evals = evals[:p]
+    else:
+        # get eigendecomposition
+        evals, evecs = spla.eigh(cov)
     # sort by eigenvalues
     sortidx = np.argsort(evals)[::-1]
     evals = evals[sortidx]
@@ -56,7 +63,7 @@ if __name__ == "__main__":
     digits = ['0','1', '7']
     digits = [ str(k) for k in range(0,10,2) ]
     # number of principle components
-    p = 100
+    p = 20
 
     # import data
     mnist = sio.loadmat('../datasets/mnist_all.mat')
@@ -64,7 +71,7 @@ if __name__ == "__main__":
     data = np.vstack(
         ( mnist['train'+d][:ndata] for d in digits )
     )
-    recon = pca(data, p)
+    recon = pca(data, p, svd=False)
     # plot everything
     fig, ax = plt.subplots(2*len(digits), ndata)
     fig.suptitle("Actual (top rows) and "+
