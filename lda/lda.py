@@ -44,7 +44,7 @@ def lda(data, k):
         datamean += csum
         datacount += ccount
     # finish off data mean calculation
-    datamean = datamean/datacount
+    datamean = datamean/float(datacount)
     # compute between-class scatter
     A = np.sum([ classcounts[cls]*np.outer(classmeans[cls]-datamean,
                                            classmeans[cls]-datamean)
@@ -58,24 +58,23 @@ def lda(data, k):
     # contributions (it estimates the true rank of the data)
     Q = spla.orth(np.vstack( data[key] for key in data.iterkeys() ).T)
     # rewrite B in this new basis
-    print Q.shape, B.shape
     B = np.dot(Q.T, np.dot(B, Q))
     # inverse of cholesky factor
-    print spla.cholesky(B)
     Bc = spla.inv(spla.cholesky(B))
     # find the principle eigenvectors
     uvecs, evals, vvecs = spla.svd(np.dot(Bc.T, np.dot(Q.T, A)))
     # return only the first @k vectors for the projection matrix 
-    return uvecs[:,:k]
+    return np.dot(Q, uvecs)
 
 if __name__ == "__main__":
-    # set some params
-    ndata = 12
+    # set some params (for this, we need at least ~170 points
+    # otherwise we get an error from np.cholesky)
+    ndata = 200
     # what do we want to include?
-    digits = ['0','1']
-    # digits = [ str(k) for k in range(0,10,2) ]
+    digits = ['0','1','2','3']
+    digits = [ str(k) for k in range(0,10,3) ]
     # number of principle components
-    p = 2
+    p = 20
 
     # import data
     mnist = sio.loadmat('../datasets/mnist_all.mat')
@@ -85,13 +84,20 @@ if __name__ == "__main__":
     # get projection matrix
     proj = lda(data, p)
     # first and second axis projectors
-    p0 = proj[:,:0]
-    p1 = proj[:,:1]
+    p0 = proj[:,0]
+    p1 = proj[:,1]
     # plot everything
     fig, ax = plt.subplots()
     fig.suptitle("LDA for MNIST digits")
-    for cls in data.iterkeys():
-        for row in data[cls]:
-            ax.plot(np.dot(p0.T,row), np.dot(p1.T,row), label="class "+cls)
-    plt.legend()
+    colors = 'bgrcmyk'
+    for icls, cls in enumerate(data.iterkeys()):
+        for irow, row in enumerate(data[cls]):
+            ax.plot(np.dot(p0,row), np.dot(p1,row), 
+                    marker='.', markersize=10,
+                    label=cls if not irow else None, 
+                    color=colors[icls])
+    # sort the legend labels because it annoys me
+    handles, labels = ax.get_legend_handles_labels()
+    handles, labels =  zip(*sorted(zip(handles,labels), key=lambda x: x[1]))
+    plt.legend(handles, labels)
     plt.show()
